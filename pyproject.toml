@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "reqdbcontentcreator"
+version = "1.0.0"
+description = ""
+authors = ["Fischer, Daniel-MGB <daniel.fischer@mgb.ch>"]
+readme = "README.md"
+
+[tool.poetry.scripts]
+reqdbcontentcreator = 'reqdbcontentcreator.__main__:main'
+
+[tool.poetry.dependencies]
+python = "^3.10"
+argparse = "^1.4.0"
+requests = "^2.32.3"
+reqdb = "^0.3.0"
+msal = "^1.31.0"
+pyyaml = "^6.0.2"
+excelextractor = "^0.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
