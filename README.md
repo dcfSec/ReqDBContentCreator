@@ -27,12 +27,12 @@ pip install reqdbcontentcreator
 ## Usage
 
 ```
-usage: reqdbcontentcreator [-h] [-c CONFIG] [--create-config] [-t TARGET] [--tenant-id TENANT_ID] [--client-id CLIENT_ID] [--insecure] [-f FILE] {asvs,samm,bsic5,nistcsf,csaccm,ciscontrols}
+usage: reqdbcontentcreator [-h] [-c CONFIG] [--create-config] [-t TARGET] [--tenant-id TENANT_ID] [--client-id CLIENT_ID] [--insecure] [-f FILE] [-d] {asvs,samm,bsic5,nistcsf,csaccm,ciscontrols,bsigrundschutz}
 
 Creates requirements in ReqDB from public standards
 
 positional arguments:
-  {asvs,samm,bsic5,nistcsf,csaccm,ciscontrols}
+  {asvs,samm,bsic5,nistcsf,csaccm,ciscontrols,bsigrundschutz}
                         Source standard to upload to ReqDB
 
 options:
@@ -46,8 +46,9 @@ options:
                         The tenant ID for the Entra ID oauth provider. Defaults to the env var 'REQDB_CLIENT_TENANT_ID'
   --client-id CLIENT_ID
                         The client ID for the Entra ID oauth provider. Defaults to the env var 'REQDB_CLIENT_CLIENT_ID'
-  --insecure            Allows the connection to ReqDB over TLS. Use this only in local test environments. This will leak you access token
+  --insecure            Allows the connection to ReqDB over TLS. Use this only in local test environments. This will leak your access token
   -f FILE, --file FILE  Input file used as a source for the standard. This is only needed for the CIS Controls as they are behind a login wall. Will be ignored by the other sources
+  -d, --debug           Turns on debug log output
 ```
 
 ## Versioning

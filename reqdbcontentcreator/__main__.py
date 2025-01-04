@@ -1,4 +1,5 @@
 import argparse
+import logging
 from os import getenv
 from msal import PublicClientApplication
 from reqdb import ReqDB
@@ -10,7 +11,7 @@ def getArgs():
     """Reads the command line arguments and stores them.
 
     positional arguments:
-    {asvs,samm,bsic5,nistcsf,csaccm,ciscontrols}
+    {asvs,samm,bsic5,nistcsf,csaccm,ciscontrols,bsigrundschutz}
                             Source standard to upload to ReqDB
 
     options:
@@ -24,7 +25,7 @@ def getArgs():
                             The tenant ID for the Entra ID oauth provider. Defaults to the env var 'REQDB_CLIENT_TENANT_ID'
     --client-id CLIENT_ID
                             The client ID for the Entra ID oauth provider. Defaults to the env var 'REQDB_CLIENT_CLIENT_ID'
-    --insecure            Allows the connection to ReqDB over TLS. Use this only in local test environments. This will leak you access token
+    --insecure            Allows the connection to ReqDB over TLS. Use this only in local test environments. This will leak your access token
     -f FILE, --file FILE  Input file used as a source for the standard. This is only needed for the CIS Controls as they are behind a login wall. Will be ignored by the other sources
     """
     parser = argparse.ArgumentParser(
@@ -34,7 +35,15 @@ def getArgs():
     parser.add_argument(
         "source",
         help="Source standard to upload to ReqDB",
-        choices=["asvs", "samm", "bsic5", "nistcsf", "csaccm", "ciscontrols"],
+        choices=[
+            "asvs",
+            "samm",
+            "bsic5",
+            "nistcsf",
+            "csaccm",
+            "ciscontrols",
+            "bsigrundschutz",
+        ],
     )
     parser.add_argument(
         "-c",
@@ -64,7 +73,7 @@ def getArgs():
     )
     parser.add_argument(
         "--insecure",
-        help="Allows the connection to ReqDB over TLS. Use this only in local test environments. This will leak you access token",
+        help="Allows the connection to ReqDB over TLS. Use this only in local test environments. This will leak your access token",
         action="store_true",
         default=False,
     )
@@ -72,6 +81,13 @@ def getArgs():
         "-f",
         "--file",
         help="Input file used as a source for the standard. This is only needed for the CIS Controls as they are behind a login wall. Will be ignored by the other sources",
+    )
+    parser.add_argument(
+        "-d",
+        "--debug",
+        help="Turns on debug log output",
+        action="store_true",
+        default=False,
     )
 
     args = parser.parse_args()
@@ -147,6 +163,19 @@ def loadConfig(config):
 def main():
     args = getArgs()
 
+    logging.basicConfig(
+        format="[%(asctime)s][%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=logging.INFO,
+    )
+
+    logging.getLogger().setLevel(logging.INFO if not args.debug else logging.DEBUG)
+
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("msal").setLevel(logging.WARNING)
+    logging.getLogger("pypandoc").setLevel(logging.WARNING)
+
     if args.create_config:
         createConfig(args.target, args.tenant_id, args.client_id, args.config)
         exit(0)
@@ -165,6 +194,7 @@ def main():
         "bsic5": sources.bsic5,
         "nistcsf": sources.nistcsf,
         "csaccm": sources.csaccm,
+        "bsigrundschutz": sources.bsigrundschutz,
     }
     if args.source in sourceFn.keys():
         sourceFn[args.source](client)
