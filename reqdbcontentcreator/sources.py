@@ -777,7 +777,7 @@ def convertXMLDescriptionToMD(XMLDescription: ET.Element) -> str:
     """
     return (
         pypandoc.convert_text(
-            ET.tostring(XMLDescription, encoding="utf8"), "md", format="docbook", extra_args=['--atx-headers']
+            ET.tostring(XMLDescription, encoding="utf8"), "md", format="docbook", extra_args=["--wrap=none", "--markdown-headings=atx"]
         )
         .split("\n\n", 1)[1]
         .strip()
