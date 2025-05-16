@@ -21,7 +21,10 @@ def asvs(client: ReqDB):
 
     logging.info("Start creating catalogues for 'OWASP ASVS'.")
     r = requests.get(
-        "https://github.com/OWASP/ASVS/releases/download/v4.0.3_release/OWASP.Application.Security.Verification.Standard.4.0.3-en.json"
+        "https://github.com/OWASP/ASVS/releases/download/v4.0.3_release/OWASP.Application.Security.Verification.Standard.4.0.3-en.json",
+        headers= {
+            'User-Agent': 'ReqDBContentCreator',
+        }
     )
     r.raise_for_status()
     asvsData = r.json()
@@ -63,7 +66,7 @@ def asvs(client: ReqDB):
                         key=f"V{'.'.join([n.zfill(2) for n in itemL2['Shortcode'][1:].split('.')])}",
                         title=itemL2["Name"],
                         description=itemL2["Name"],
-                        parent=parentL1,
+                        parentId=parentL1["id"],
                     )
                 )
                 Rollback.topics.append(parentL2["id"])
@@ -80,7 +83,7 @@ def asvs(client: ReqDB):
                             key=f"V{'.'.join([n.zfill(2) for n in itemL3['Shortcode'][1:].split('.')])}",
                             title=itemL2["Name"],
                             description=itemL3["Description"],
-                            parent=parentL2,
+                            parentId=parentL2["id"],
                             visible="[DELETED," not in itemL3["Description"],
                             tags=t,
                         )
@@ -107,6 +110,7 @@ def asvs(client: ReqDB):
                 title=f"{asvsData['Name']} ({asvsData['ShortName']})",
                 description=asvsData["Description"],
                 topics=rootTopics,
+                tags=[]
             )
         )
         logging.info(f"Catalogue with ID {catalogue['id']} created.")
@@ -126,6 +130,9 @@ def nistcsf(client: ReqDB):
     r = requests.get(
         "https://csrc.nist.gov/extensions/nudp/services/json/csf/download?olirids=all",
         stream=True,
+        headers= {
+            'User-Agent': 'ReqDBContentCreator',
+        }
     )
     r.raise_for_status()
 
@@ -198,7 +205,7 @@ def nistcsf(client: ReqDB):
                         key=l2Key,
                         title=itemL2["title"],
                         description=itemL2["description"],
-                        parent=parentL1,
+                        parentId=parentL1["id"],
                     )
                 )
                 Rollback.topics.append(parentL2["id"])
@@ -208,7 +215,7 @@ def nistcsf(client: ReqDB):
                             key=l3Key,
                             title=itemL3["title"],
                             description=itemL3["description"],
-                            parent=parentL2,
+                            parentId=parentL2["id"],
                             tags=[],
                             visible="[Withdrawn" not in itemL3["title"],
                         )
@@ -219,6 +226,7 @@ def nistcsf(client: ReqDB):
                 title="NIST Cybersecurity Framework (CSF) 2.0",
                 description="The NIST Cybersecurity Framework (CSF) 2.0 provides guidance to industry, government agencies, and other organizations to manage cybersecurity risks. It offers a taxonomy of high-level cybersecurity outcomes that can be used by any organization — regardless of its size, sector, or maturity — to better understand, assess, prioritize, and communicate its cybersecurity efforts. The CSF does not prescribe how outcomes should be achieved. Rather, it links to online resources that provide additional guidance on practices and controls that could be used to achieve those outcomes.",
                 topics=rootTopics,
+                tags=[]
             )
         )
         logging.info(f"Catalogue with ID {catalogue['id']} created.")
@@ -238,6 +246,9 @@ def bsic5(client: ReqDB):
     r = requests.get(
         "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/CloudComputing/ComplianceControlsCatalogue/2020/C5_2020_editable.xlsx?__blob=publicationFile&v=5",
         stream=True,
+        headers= {
+            'User-Agent': 'ReqDBContentCreator',
+        }
     )
     r.raise_for_status()
 
@@ -364,7 +375,7 @@ def bsic5(client: ReqDB):
                         key=ki,
                         title=i["Title"],
                         description=i["Basic Criteria"],
-                        parent=parent,
+                        parentId=parent["id"],
                         tags=[],
                     )
                 )
@@ -416,6 +427,7 @@ def bsic5(client: ReqDB):
                 title="Cloud Computing Compliance Criteria Catalogue (C5:2020 Criteria)",
                 description="The C5 (Cloud Computing Compliance Criteria Catalogue) criteria catalogue specifies minimum requirements for secure cloud computing and is primarily intended for professional cloud providers, their auditors and customers.",
                 topics=rootTopics,
+                tags=[]
             )
         )
         logging.info(f"Catalogue with ID {catalogue['id']} created.")
@@ -434,6 +446,9 @@ def samm(client: ReqDB):
     r = requests.get(
         "https://github.com/owaspsamm/core/releases/download/v2.1.0/SAMM_spreadsheet.xlsx",
         stream=True,
+        headers= {
+            'User-Agent': 'ReqDBContentCreator',
+        }
     )
     r.raise_for_status()
 
@@ -503,7 +518,7 @@ def samm(client: ReqDB):
             for keyL2, itemL2 in itemL1["topics"].items():
                 parentL2 = client.Topics.add(
                     models.Topic(
-                        key=keyL2, title=itemL2["title"], description="-", parent=parentL1
+                        key=keyL2, title=itemL2["title"], description="-", parentId=parentL1["id"],
                     )
                 )
                 Rollback.topics.append(parentL2["id"])
@@ -513,7 +528,7 @@ def samm(client: ReqDB):
                             key=keyL3,
                             title=itemL3["title"],
                             description="-",
-                            parent=parentL2,
+                            parentId=parentL2["id"],
                         )
                     )
                     Rollback.topics.append(parentL3["id"])
@@ -523,7 +538,7 @@ def samm(client: ReqDB):
                                 key=keyL4,
                                 title=itemL4["title"],
                                 description=itemL4["description"],
-                                parent=parentL3,
+                                parentId=parentL3["id"],
                                 tags=[maturity[itemL4["tag"]]],
                             )
                         )
@@ -534,6 +549,7 @@ def samm(client: ReqDB):
                 title="Software Assurance Maturity Model (SAMM)",
                 description="SAMM provides an effective and measurable way for all types of organizations to analyze and improve their software security posture.",
                 topics=rootTopics,
+                tags=[]
             )
         )
 
@@ -553,6 +569,9 @@ def csaccm(client: ReqDB):
     r = requests.get(
         "https://cloudsecurityalliance.org/download/artifacts/ccm-machine-readable-bundle-json-yaml-oscal",
         stream=True,
+        headers= {
+            'User-Agent': 'ReqDBContentCreator',
+        }
     )
     r.raise_for_status()
 
@@ -581,7 +600,7 @@ def csaccm(client: ReqDB):
                         key=control["id"],
                         title=control["title"],
                         description=control["specification"],
-                        parent=parentL1,
+                        parentId=parentL1["id"],
                         tags=[],
                     )
                 )
@@ -592,6 +611,7 @@ def csaccm(client: ReqDB):
                 title=f"{ccm['name']} ({ccm['version']})",
                 description=f"{ccm['name']}, Version {ccm['version']}. See {ccm['url']}",
                 topics=rootTopics,
+                tags=[]
             )
         )
 
@@ -708,7 +728,7 @@ def ciscontrols(client: ReqDB, file: str):
                         key=requirementKey,
                         title=requirement["title"],
                         description=requirement["description"],
-                        parent=parentL1,
+                        parentId=parentL1["id"],
                         tags=tags,
                     )
                 )
@@ -719,6 +739,7 @@ def ciscontrols(client: ReqDB, file: str):
                 title="CIS Controls Version 8",
                 description="The CIS Critical Security Controls (CIS Controls) are a prioritized set of Safeguards to mitigate the most prevalent cyber-attacks against systems and networks. They are mapped to and referenced by multiple legal, regulatory, and policy frameworks.",
                 topics=rootTopics,
+                tags=[]
             )
         )
 
@@ -739,6 +760,9 @@ def bsigrundschutz(client: ReqDB):
 
     r = requests.get(
         "https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Grundschutz/IT-GS-Kompendium/XML_Kompendium_2023.xml?__blob=publicationFile&v=4",
+        headers= {
+            'User-Agent': 'ReqDBContentCreator',
+        }
     )
     r.raise_for_status()
 
@@ -804,7 +828,7 @@ def writeBSIGrundschutzThreats(client: ReqDB, elementalThreatsET: list[: ET.Elem
             key=f"EG",
             title="Elementare Gefährdungen",
             description="",
-            parent=None,
+            parentId=None,
         )
     )
     Rollback.topics.append(elementalRoot["id"])
@@ -818,7 +842,7 @@ def writeBSIGrundschutzThreats(client: ReqDB, elementalThreatsET: list[: ET.Elem
                 key=titleLine[0],
                 title=titleLine[1],
                 description=convertXMLDescriptionToMD(e),
-                parent=elementalRoot,
+                parentId=elementalRoot["id"],
                 tags=[elementalTag],
             )
         )
@@ -835,7 +859,7 @@ def writeBSIGrundschutzThreats(client: ReqDB, elementalThreatsET: list[: ET.Elem
                 key=f"{buildingBlockKey} (G)",
                 title=f"{buildingBlock['title']} Gefährdungen",
                 description="",
-                parent=None,
+                parentId=None,
             )
         )
         Rollback.topics.append(buildingBlockRoot["id"])
@@ -846,7 +870,7 @@ def writeBSIGrundschutzThreats(client: ReqDB, elementalThreatsET: list[: ET.Elem
                     key=f"{topicKey}.G",
                     title=f"{topic['title']} Gefährdungen",
                     description="",
-                    parent=buildingBlockRoot,
+                    parentId=buildingBlockRoot["id"],
                 )
             )
             Rollback.topics.append(parentTopic["id"])
@@ -856,7 +880,7 @@ def writeBSIGrundschutzThreats(client: ReqDB, elementalThreatsET: list[: ET.Elem
                         key=threatKey,
                         title=threat["title"],
                         description=threat["description"],
-                        parent=parentTopic,
+                        parentId=parentTopic["id"],
                         tags=[topicTag],
                     )
                 )
@@ -867,6 +891,7 @@ def writeBSIGrundschutzThreats(client: ReqDB, elementalThreatsET: list[: ET.Elem
             title="BSI Grundschutz Gefährdungen (2023)",
             description="Elementare und themenspezifische Gefährdungen aus dem BSI Grundschutz (2023)",
             topics=buildingBlockRoots + [elementalRoot],
+            tags=[]
         )
     )
     Rollback.catalogues.append(catalogue["id"])
@@ -895,7 +920,7 @@ def writeBSIRequirements(client: ReqDB, buildingBlocks: dict):
                 key=buildingBlockKey,
                 title=buildingBlock["title"],
                 description="",
-                parent=None,
+                parentId=None,
             )
         )
         Rollback.topics.append(buildingBlockRoot["id"])
@@ -906,7 +931,7 @@ def writeBSIRequirements(client: ReqDB, buildingBlocks: dict):
                     key=topicKey,
                     title=topic["title"],
                     description="",
-                    parent=buildingBlockRoot,
+                    parentId=buildingBlockRoot["id"],
                 )
             )
             Rollback.topics.append(parentTopic["id"])
@@ -916,7 +941,7 @@ def writeBSIRequirements(client: ReqDB, buildingBlocks: dict):
                         key=requirementKey,
                         title=requirement["title"],
                         description=requirement["description"],
-                        parent=parentTopic,
+                        parentId=parentTopic["id"],
                         tags=[
                             (
                                 tags[requirement["tag"]]
@@ -938,6 +963,7 @@ def writeBSIRequirements(client: ReqDB, buildingBlocks: dict):
             title="BSI Grundschutz Bausteine (2023)",
             description="Anforderungsbausteine des BSI Grundschutzes (2023)",
             topics=buildingBlockRoots,
+            tags=[]
         )
     )
     Rollback.catalogues.append(catalogue["id"])
