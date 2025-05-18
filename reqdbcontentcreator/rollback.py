@@ -10,7 +10,17 @@ class Rollback:
     extraTypes = []
 
     @classmethod
-    def rollBackItems(cls, items: list, target: ReqDB.Entity):
+    def rollBackItems(
+        cls,
+        items: list,
+        target: type[
+            ReqDB.Requirements
+            | ReqDB.ExtraTypes
+            | ReqDB.Topics
+            | ReqDB.Tags
+            | ReqDB.Catalogues
+        ],
+    ):
         for item in items:
             target.delete(item, force=True)
         items = []
