@@ -11,7 +11,7 @@ def getArgs():
     """Reads the command line arguments and stores them.
 
     positional arguments:
-    {asvs,samm,bsic5,nistcsf,csaccm,ciscontrols,bsigrundschutz}
+    {asvs4,asvs5,samm,bsic5,nistcsf,csaccm,ciscontrols,bsigrundschutz}
                             Source standard to upload to ReqDB
 
     options:
@@ -36,7 +36,8 @@ def getArgs():
         "source",
         help="Source standard to upload to ReqDB",
         choices=[
-            "asvs",
+            "asvs4",
+            "asvs5",
             "samm",
             "bsic5",
             "nistcsf",
@@ -189,7 +190,8 @@ def main():
     client = ReqDB(f"{target}", token, args.insecure)
 
     sourceFn = {
-        "asvs": sources.asvs,
+        "asvs4": sources.asvs4,
+        "asvs5": sources.asvs5,
         "samm": sources.samm,
         "bsic5": sources.bsic5,
         "nistcsf": sources.nistcsf,

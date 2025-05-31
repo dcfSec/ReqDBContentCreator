@@ -12,14 +12,14 @@ import xml.etree.ElementTree as ET
 from reqdbcontentcreator.rollback import Rollback
 
 
-def asvs(client: ReqDB):
-    """Downloads and adds the OWASP ASVS to ReqDB
+def asvs4(client: ReqDB):
+    """Downloads and adds the OWASP ASVS 4 to ReqDB
 
     :param client: ReqDB client
     :type client: ReqDB
     """
 
-    logging.info("Start creating catalogues for 'OWASP ASVS'.")
+    logging.info("Start creating catalogues for 'OWASP ASVS 4'.")
     r = requests.get(
         "https://github.com/OWASP/ASVS/releases/download/v4.0.3_release/OWASP.Application.Security.Verification.Standard.4.0.3-en.json",
         headers={
@@ -30,45 +30,63 @@ def asvs(client: ReqDB):
     asvsData = r.json()
 
     try:
-        l1 = models.TagIdOnly.model_validate(
-            client.Tags.add(models.Tag(name="Level 1")).model_dump()
-        )
-        Rollback.tags.append(l1.id)
-        l2 = models.TagIdOnly.model_validate(
-            client.Tags.add(models.Tag(name="Level 2")).model_dump()
-        )
-        Rollback.tags.append(l2.id)
-        l3 = models.TagIdOnly.model_validate(
-            client.Tags.add(models.Tag(name="Level 3")).model_dump()
-        )
-        Rollback.tags.append(l3.id)
+        findTags = client.Tags.find("Level 1")
+        if len(findTags) > 0:
+            l1 = findTags[0].toIdOnly()
+        else:
+            l1 = client.Tags.add(models.Tag(name="Level 1")).toIdOnly()
+            Rollback.tags.append(l1.id)
 
-        nist = client.ExtraTypes.add(
-            models.ExtraType(
-                title="NIST Ref", extraType=3, description="NIST Reference"
+        findTags = client.Tags.find("Level 2")
+        if len(findTags) > 0:
+            l2 = findTags[0].toIdOnly()
+        else:
+            l2 = client.Tags.add(models.Tag(name="Level 2")).toIdOnly()
+            Rollback.tags.append(l1.id)
+
+        findTags = client.Tags.find("Level 3")
+        if len(findTags) > 0:
+            l3 = findTags[0].toIdOnly()
+        else:
+            l3 = client.Tags.add(models.Tag(name="Level 3")).toIdOnly()
+            Rollback.tags.append(l1.id)
+
+        findExtra = client.ExtraTypes.find("NIST Ref")
+        if len(findExtra) > 0:
+            nist = findExtra[0]
+        else:
+            nist = client.ExtraTypes.add(
+                models.ExtraType(
+                    title="NIST Ref", extraType=3, description="NIST Reference"
+                )
             )
-        )
-        Rollback.extraTypes.append(nist.id)
-        cve = client.ExtraTypes.add(
-            models.ExtraType(title="CVE Ref", extraType=3, description="CVE Reference")
-        )
-        Rollback.extraTypes.append(cve.id)
+            Rollback.extraTypes.append(nist.id)
+        findExtra = client.ExtraTypes.find("CVE Ref")
+        if len(findExtra) > 0:
+            cve = findExtra[0]
+        else:
+            cve = client.ExtraTypes.add(
+                models.ExtraType(
+                    title="CVE Ref", extraType=3, description="CVE Reference"
+                )
+            )
+            Rollback.extraTypes.append(cve.id)
 
         rootTopics = []
         for itemL1 in asvsData["Requirements"]:
             parentL1 = client.Topics.add(
                 models.Topic(
-                    key=f"V{itemL1['Shortcode'][1:].zfill(2)}",
+                    key=f"ASVSv4-V{itemL1['Shortcode'][1:].zfill(2)}",
                     title=itemL1["ShortName"],
                     description=itemL1["ShortName"],
                 )
             )
             Rollback.topics.append(parentL1.id)
-            rootTopics.append(models.TopicIdOnly.model_validate(parentL1.model_dump()))
+            rootTopics.append(parentL1.toIdOnly())
             for itemL2 in itemL1["Items"]:
                 parentL2 = client.Topics.add(
                     models.Topic(
-                        key=f"V{'.'.join([n.zfill(2) for n in itemL2['Shortcode'][1:].split('.')])}",
+                        key=f"ASVSv4-V{'.'.join([n.zfill(2) for n in itemL2['Shortcode'][1:].split('.')])}",
                         title=itemL2["Name"],
                         description=itemL2["Name"],
                         parentId=parentL1.id,
@@ -85,7 +103,7 @@ def asvs(client: ReqDB):
                         t.append(l3)
                     requirement = client.Requirements.add(
                         models.Requirement(
-                            key=f"V{'.'.join([n.zfill(2) for n in itemL3['Shortcode'][1:].split('.')])}",
+                            key=f"ASVSv4-V{'.'.join([n.zfill(2) for n in itemL3['Shortcode'][1:].split('.')])}",
                             title=itemL2["Name"],
                             description=itemL3["Description"],
                             parentId=parentL2.id,
@@ -112,7 +130,108 @@ def asvs(client: ReqDB):
                         )
         catalogue = client.Catalogues.add(
             models.Catalogue(
-                title=f"{asvsData['Name']} ({asvsData['ShortName']})",
+                key="ASVSv4",
+                title=f"{asvsData['Name']} ({asvsData['ShortName']} {asvsData['Version']})",
+                description=asvsData["Description"],
+                topics=rootTopics,
+                tags=[],
+            )
+        )
+        logging.info(f"Catalogue with ID {catalogue.id} created.")
+    except Exception as e:
+        panic(e, client)
+
+
+def asvs5(client: ReqDB):
+    """Downloads and adds the OWASP ASVS 5 to ReqDB
+
+    :param client: ReqDB client
+    :type client: ReqDB
+    """
+
+    logging.info("Start creating catalogues for 'OWASP ASVS 5'.")
+    r = requests.get(
+        "https://github.com/OWASP/ASVS/releases/download/v5.0.0_release/OWASP_Application_Security_Verification_Standard_5.0.0_en.json",
+        headers={
+            "User-Agent": "ReqDBContentCreator",
+        },
+    )
+    r.raise_for_status()
+    asvsData = r.json()
+
+    try:
+        tags: list[models.TagIdOnly] = []
+
+        findTags = client.Tags.find("Level 1")
+        if len(findTags) > 0:
+            tags.append(findTags[0].toIdOnly())
+        else:
+            tags.append(
+                models.TagIdOnly.model_validate(
+                    client.Tags.add(models.Tag(name="Level 1")).model_dump()
+                )
+            )
+            Rollback.tags.append(tags[0].id)
+
+        findTags = client.Tags.find("Level 2")
+        if len(findTags) > 0:
+            tags.append(findTags[0].toIdOnly())
+        else:
+            tags.append(
+                models.TagIdOnly.model_validate(
+                    client.Tags.add(models.Tag(name="Level 2")).model_dump()
+                )
+            )
+            Rollback.tags.append(tags[1].id)
+
+        findTags = client.Tags.find("Level 3")
+        if len(findTags) > 0:
+            tags.append(findTags[0].toIdOnly())
+        else:
+            tags.append(
+                models.TagIdOnly.model_validate(
+                    client.Tags.add(models.Tag(name="Level 3")).model_dump()
+                )
+            )
+            Rollback.tags.append(tags[2].id)
+
+        rootTopics = []
+        for itemL1 in asvsData["Requirements"]:
+            parentL1 = client.Topics.add(
+                models.Topic(
+                    key=f"ASVSv5-V{itemL1['Shortcode'][1:].zfill(2)}",
+                    title=itemL1["ShortName"],
+                    description=itemL1["Name"],
+                )
+            )
+            Rollback.topics.append(parentL1.id)
+            rootTopics.append(parentL1.toIdOnly())
+            for itemL2 in itemL1["Items"]:
+                parentL2 = client.Topics.add(
+                    models.Topic(
+                        key=f"ASVSv5-V{'.'.join([n.zfill(2) for n in itemL2['Shortcode'][1:].split('.')])}",
+                        title=itemL2["Name"],
+                        description=itemL2["Name"],
+                        parentId=parentL1.id,
+                    )
+                )
+                Rollback.topics.append(parentL2.id)
+                for itemL3 in itemL2["Items"]:
+                    requirement = client.Requirements.add(
+                        models.Requirement(
+                            key=f"ASVSv5-V{'.'.join([n.zfill(2) for n in itemL3['Shortcode'][1:].split('.')])}",
+                            title=itemL2["Name"],
+                            description=itemL3["Description"],
+                            parentId=parentL2.id,
+                            visible="[DELETED," not in itemL3["Description"],
+                            tags=[tags[int(itemL3["L"]) - 1]],
+                        )
+                    )
+                    Rollback.requirements.append(requirement.id)
+        catalogue = client.Catalogues.add(
+            models.Catalogue(
+                key="ASVSv5",
+                title=f"{asvsData['Name']} ({asvsData['ShortName']} {asvsData['Version']})",
                 description=asvsData["Description"],
                 topics=rootTopics,
                 tags=[],
@@ -204,17 +323,17 @@ def nistcsf(client: ReqDB):
         for l1Key, itemL1 in o.items():
             parentL1 = client.Topics.add(
                 models.Topic(
-                    key=l1Key,
+                    key=f"CSF-{l1Key}",
                     title=itemL1["title"],
                     description=itemL1["description"],
                 )
             )
             Rollback.topics.append(parentL1.id)
-            rootTopics.append(models.TopicIdOnly.model_validate(parentL1.model_dump()))
+            rootTopics.append(parentL1.toIdOnly())
             for l2Key, itemL2 in itemL1["children"].items():
                 parentL2 = client.Topics.add(
                     models.Topic(
-                        key=l2Key,
+                        key=f"CSF-{l2Key}",
                         title=itemL2["title"],
                         description=itemL2["description"],
                         parentId=parentL1.id,
@@ -224,7 +343,7 @@ def nistcsf(client: ReqDB):
                 for l3Key, itemL3 in itemL2["requirements"].items():
                     requirement = client.Requirements.add(
                         models.Requirement(
-                            key=l3Key,
+                            key=f"CSF-{l3Key}",
                             title=itemL3["title"],
                             description=itemL3["description"],
                             parentId=parentL2.id,
@@ -235,6 +354,7 @@ def nistcsf(client: ReqDB):
                     Rollback.topics.append(requirement.id)
         catalogue = client.Catalogues.add(
             models.Catalogue(
+                key="CSF",
                 title="NIST Cybersecurity Framework (CSF) 2.0",
                 description="The NIST Cybersecurity Framework (CSF) 2.0 provides guidance to industry, government agencies, and other organizations to manage cybersecurity risks. It offers a taxonomy of high-level cybersecurity outcomes that can be used by any organization — regardless of its size, sector, or maturity — to better understand, assess, prioritize, and communicate its cybersecurity efforts. The CSF does not prescribe how outcomes should be achieved. Rather, it links to online resources that provide additional guidance on practices and controls that could be used to achieve those outcomes.",
                 topics=rootTopics,
@@ -380,12 +500,12 @@ def bsic5(client: ReqDB):
             )
             Rollback.topics.append(parent.id)
 
-            rootTopics.append(models.TopicIdOnly.model_validate(parent.model_dump()))
+            rootTopics.append(parent.toIdOnly())
 
             for ki, i in v.items():
                 requirement = client.Requirements.add(
                     models.Requirement(
-                        key=ki,
+                        key=f"C5-{ki}",
                         title=i["Title"],
                         description=i["Basic Criteria"],
                         parentId=parent.id,
@@ -437,6 +557,7 @@ def bsic5(client: ReqDB):
 
         catalogue = client.Catalogues.add(
             models.Catalogue(
+                key="C5",
                 title="Cloud Computing Compliance Criteria Catalogue (C5:2020 Criteria)",
                 description="The C5 (Cloud Computing Compliance Criteria Catalogue) criteria catalogue specifies minimum requirements for secure cloud computing and is primarily intended for professional cloud providers, their auditors and customers.",
                 topics=rootTopics,
@@ -530,14 +651,16 @@ def samm(client: ReqDB):
 
         for keyL1, itemL1 in o.items():
             parentL1 = client.Topics.add(
-                models.Topic(key=keyL1, title=itemL1["title"], description="-")
+                models.Topic(
+                    key=f"SAMM-{keyL1}", title=itemL1["title"], description="-"
+                )
             )
             Rollback.topics.append(parentL1.id)
-            rootTopics.append(models.TopicIdOnly.model_validate(parentL1.model_dump()))
+            rootTopics.append(parentL1.toIdOnly())
             for keyL2, itemL2 in itemL1["topics"].items():
                 parentL2 = client.Topics.add(
                     models.Topic(
-                        key=keyL2,
+                        key=f"SAMM-{keyL2}",
                         title=itemL2["title"],
                         description="-",
                         parentId=parentL1.id,
@@ -547,7 +670,7 @@ def samm(client: ReqDB):
                 for keyL3, itemL3 in itemL2["topics"].items():
                     parentL3 = client.Topics.add(
                         models.Topic(
-                            key=keyL3,
+                            key=f"SAMM-{keyL3}",
                             title=itemL3["title"],
                             description="-",
                             parentId=parentL2.id,
@@ -557,7 +680,7 @@ def samm(client: ReqDB):
                     for keyL4, itemL4 in itemL3["requirements"].items():
                         requirement = client.Requirements.add(
                             models.Requirement(
-                                key=keyL4,
+                                key=f"SAMM-{keyL4}",
                                 title=itemL4["title"],
                                 description=itemL4["description"],
                                 parentId=parentL3.id,
@@ -568,6 +691,7 @@ def samm(client: ReqDB):
 
         catalogue = client.Catalogues.add(
             models.Catalogue(
+                key="SAMM",
                 title="Software Assurance Maturity Model (SAMM)",
                 description="SAMM provides an effective and measurable way for all types of organizations to analyze and improve their software security posture.",
                 topics=rootTopics,
@@ -612,14 +736,16 @@ def csaccm(client: ReqDB):
     try:
         for domain in ccm["domains"]:
             parentL1 = client.Topics.add(
-                models.Topic(key=domain["id"], title=domain["title"], description="-")
+                models.Topic(
+                    key=f"CCM-{domain['id']}", title=domain["title"], description="-"
+                )
             )
             Rollback.topics.append(parentL1.id)
-            rootTopics.append(models.TopicIdOnly.model_validate(parentL1.model_dump()))
+            rootTopics.append(parentL1.toIdOnly())
             for control in domain["controls"]:
                 requirement = client.Requirements.add(
                     models.Requirement(
-                        key=control["id"],
+                        key=f"CCM-{control['id']}",
                         title=control["title"],
                         description=control["specification"],
                         parentId=parentL1.id,
@@ -630,6 +756,7 @@ def csaccm(client: ReqDB):
 
         catalogue = client.Catalogues.add(
             models.Catalogue(
+                key="CCM",
                 title=f"{ccm['name']} ({ccm['version']})",
                 description=f"{ccm['name']}, Version {ccm['version']}. See {ccm['url']}",
                 topics=rootTopics,
@@ -746,7 +873,7 @@ def ciscontrols(client: ReqDB, file: str):
                 )
             )
             Rollback.topics.append(parentL1.id)
-            rootTopics.append(models.TopicIdOnly.model_validate(parentL1.model_dump()))
+            rootTopics.append(parentL1.toIdOnly())
             for requirementKey, requirement in domain["requirements"].items():
                 tags = []
                 tags.append(functions[requirement["function"]])
@@ -766,6 +893,7 @@ def ciscontrols(client: ReqDB, file: str):
 
         catalogue = client.Catalogues.add(
             models.Catalogue(
+                key="CIS",
                 title="CIS Controls Version 8",
                 description="The CIS Critical Security Controls (CIS Controls) are a prioritized set of Safeguards to mitigate the most prevalent cyber-attacks against systems and networks. They are mapped to and referenced by multiple legal, regulatory, and policy frameworks.",
                 topics=rootTopics,
@@ -868,7 +996,7 @@ def writeBSIGrundschutzThreats(
     elementalRoot = models.TopicIdOnly.model_validate(
         client.Topics.add(
             models.Topic(
-                key=f"EG",
+                key=f"BSI-EG",
                 title="Elementare Gefährdungen",
                 description="Elementare Gefährdungen",
                 parentId=None,
@@ -937,6 +1065,7 @@ def writeBSIGrundschutzThreats(
 
     catalogue = client.Catalogues.add(
         models.Catalogue(
+            key="BIS-G",
             title="BSI Grundschutz Gefährdungen (2023)",
             description="Elementare und themenspezifische Gefährdungen aus dem BSI Grundschutz (2023)",
             topics=buildingBlockRoots + [elementalRoot],
@@ -973,7 +1102,7 @@ def writeBSIRequirements(client: ReqDB, buildingBlocks: dict):
         buildingBlockRoot = models.TopicIdOnly.model_validate(
             client.Topics.add(
                 models.Topic(
-                    key=buildingBlockKey,
+                    key=f"BSI-{buildingBlockKey}",
                     title=buildingBlock["title"],
                     description=buildingBlock["title"],
                     parentId=None,
@@ -985,7 +1114,7 @@ def writeBSIRequirements(client: ReqDB, buildingBlocks: dict):
         for topicKey, topic in buildingBlock["children"].items():
             parentTopic = client.Topics.add(
                 models.Topic(
-                    key=topicKey,
+                    key=f"BSI-{topicKey}",
                     title=topic["title"],
                     description=topic["title"],
                     parentId=buildingBlockRoot.id,
@@ -998,7 +1127,7 @@ def writeBSIRequirements(client: ReqDB, buildingBlocks: dict):
                     neededTags: list[models.TagIdOnly] = [tags[requirement["tag"]]]
                 requirementReturn = client.Requirements.add(
                     models.Requirement(
-                        key=requirementKey,
+                        key=f"BSI-{requirementKey}",
                         title=requirement["title"],
                         description=requirement["description"],
                         parentId=parentTopic.id,
@@ -1014,6 +1143,7 @@ def writeBSIRequirements(client: ReqDB, buildingBlocks: dict):
 
     catalogue = client.Catalogues.add(
         models.Catalogue(
+            key="BSI",
             title="BSI Grundschutz Bausteine (2023)",
             description="Anforderungsbausteine des BSI Grundschutzes (2023)",
             topics=buildingBlockRoots,
