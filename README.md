@@ -1,7 +1,7 @@
 # ReqDBContentCreator
 
 A tool to add different requirement catalogues to ReqDB. The content creator supports following catalogues:
-* [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/)
+* [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/) (Version 4 and 5)
 * [OWASP SAMM](https://owasp.org/www-project-samm/)
 * [BSI C5](https://www.bsi.bund.de/EN/Themen/Unternehmen-und-Organisationen/Informationen-und-Empfehlungen/Empfehlungen-nach-Angriffszielen/Cloud-Computing/Kriterienkatalog-C5/kriterienkatalog-c5_node.html)
 * [NIST CSF](https://www.nist.gov/cyberframework)
@@ -32,7 +32,7 @@ usage: reqdbcontentcreator [-h] [-c CONFIG] [--create-config] [-t TARGET] [--ten
 Creates requirements in ReqDB from public standards
 
 positional arguments:
-  {asvs,samm,bsic5,nistcsf,csaccm,ciscontrols,bsigrundschutz}
+  {asvs4,asvs5,samm,bsic5,nistcsf,csaccm,ciscontrols,bsigrundschutz}
                         Source standard to upload to ReqDB
 
 options:
