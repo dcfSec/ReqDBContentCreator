@@ -1065,7 +1065,7 @@ def writeBSIGrundschutzThreats(
 
     catalogue = client.Catalogues.add(
         models.Catalogue(
-            key="BIS-G",
+            key="BSI-G",
             title="BSI Grundschutz Gefährdungen (2023)",
             description="Elementare und themenspezifische Gefährdungen aus dem BSI Grundschutz (2023)",
             topics=buildingBlockRoots + [elementalRoot],
