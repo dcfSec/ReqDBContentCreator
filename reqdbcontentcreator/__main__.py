@@ -1,13 +1,15 @@
 import argparse
+from collections.abc import Callable
 import logging
 from os import getenv
-from msal import PublicClientApplication
-from reqdb import ReqDB
+
 import yaml
+from reqdb import ReqDB
+
 from reqdbcontentcreator import sources
 
 
-def getArgs():
+def getArgs() -> argparse.Namespace:
     """Reads the command line arguments and stores them.
 
     positional arguments:
@@ -15,18 +17,21 @@ def getArgs():
                             Source standard to upload to ReqDB
 
     options:
-    -h, --help            show this help message and exit
-    -c CONFIG, --config CONFIG
-                            Path to the config file
-    --create-config       Creates a config file with the given config parameters and exits. Saves the config into the given config file
-    -t TARGET, --target TARGET
-                            The target ReqDB server
-    --tenant-id TENANT_ID
-                            The tenant ID for the Entra ID oauth provider. Defaults to the env var 'REQDB_CLIENT_TENANT_ID'
-    --client-id CLIENT_ID
-                            The client ID for the Entra ID oauth provider. Defaults to the env var 'REQDB_CLIENT_CLIENT_ID'
-    --insecure            Allows the connection to ReqDB over TLS. Use this only in local test environments. This will leak your access token
-    -f FILE, --file FILE  Input file used as a source for the standard. This is only needed for the CIS Controls as they are behind a login wall. Will be ignored by the other sources
+        -h, --help            show this help message and exit
+        -c, --config CONFIG   Path to the config file
+        --create-config       Creates a config file with the given config parameters and exits. Saves the config into the given config file
+        -t, --target TARGET   The target ReqDB server
+        --token-endpoint TOKEN_ENDPOINT
+                                The URL for the OAuth token endpoint. Defaults to the env var 'REQDB_CLIENT_TOKEN_ENDPOINT'
+        --scope SCOPE         The scope for the OAuth app (ReqDB API). Defaults to the env var 'REQDB_API_SCOPE'
+        --client-id CLIENT_ID
+                                The client Id for the oauth client. Defaults to the env var 'REQDB_CLIENT_CLIENT_Id'
+        --client-secret CLIENT_SECRET
+                                The client secret for the oauth client. The env var should be used for this. Defaults to the env var 'REQDB_CLIENT_CLIENT_SECRET'
+        --insecure            Allows the connection to ReqDB over TLS. Use this only in local test environments. This will leak your access token
+        -f, --file FILE       Input file used as a source for the standard. This is only needed for the CIS Controls as they are behind a login wall. Will be ignored by the
+                                other sources
+        -d, --debug           Turns on debug log output
     """
     parser = argparse.ArgumentParser(
         prog="reqdbcontentcreator",
@@ -63,14 +68,24 @@ def getArgs():
         help="The target ReqDB server",
     )
     parser.add_argument(
-        "--tenant-id",
-        help="The tenant ID for the Entra ID oauth provider. Defaults to the env var 'REQDB_CLIENT_TENANT_ID'",
-        default=getenv("REQDB_CLIENT_TENANT_ID", None),
+        "--token-endpoint",
+        help="The URL for the OAuth token endpoint. Defaults to the env var 'REQDB_CLIENT_TOKEN_ENDPOINT'",
+        default=getenv("REQDB_CLIENT_TOKEN_ENDPOINT", None),
+    )
+    parser.add_argument(
+        "--scope",
+        help="The scope for the OAuth app (ReqDB API). Defaults to the env var 'REQDB_API_SCOPE'",
+        default=getenv("REQDB_API_SCOPE", None),
     )
     parser.add_argument(
         "--client-id",
-        help="The client ID for the Entra ID oauth provider. Defaults to the env var 'REQDB_CLIENT_CLIENT_ID'",
-        default=getenv("REQDB_CLIENT_CLIENT_ID", None),
+        help="The client Id for the oauth client. Defaults to the env var 'REQDB_CLIENT_CLIENT_Id'",
+        default=getenv("REQDB_CLIENT_CLIENT_Id", None),
+    )
+    parser.add_argument(
+        "--client-secret",
+        help="The client secret for the oauth client. The env var should be used for this. Defaults to the env var 'REQDB_CLIENT_CLIENT_SECRET'",
+        default=getenv("REQDB_CLIENT_CLIENT_SECRET", None),
     )
     parser.add_argument(
         "--insecure",
@@ -91,7 +106,7 @@ def getArgs():
         default=False,
     )
 
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
 
     if args.create_config is True and not args.config:
         raise SyntaxError(
@@ -100,55 +115,29 @@ def getArgs():
     return args
 
 
-def getAccessToken(tenantID, clientID):
-    """
-    Returns an access token for the given client in the given tenant
-
-    :param string tenantID: Tenant ID from the used Entra ID tenant
-    :param string clientID: oAuth client ID for the ReqDB application
-    :raises PermissionError: Raises if an access token could not be fetched
-    :raises RuntimeError: Raises if an unknown error occurred
-    :return string: oAuth access token
-    """
-    scopes = [
-        f"api://{clientID}/ReqDB.Requirements.Reader",
-        f"api://{clientID}/ReqDB.Requirements.Writer",
-    ]
-    app = PublicClientApplication(
-        clientID, authority=f"https://login.microsoftonline.com/{tenantID}"
-    )
-
-    result = app.acquire_token_interactive(scopes=scopes)
-
-    if result:
-        if "access_token" in result:
-            return result["access_token"]
-        else:
-            raise PermissionError(
-                f"{result.get('error')}: {result.get('error_description')} [{result.get('correlation_id')}]"
-            )
-    else:
-        raise RuntimeError("Unknown error")
-
-
-def createConfig(target, tenantID, clientID, config):
+def createConfig(
+    target: str, clientId: str, tokenEndpoint: str, scope: str, config: str
+) -> None:
     """Creates the config file
 
     :param target: Target ReqDB server
     :type target: string
-    :param tenantID: Tenant ID for the Entra ID config
-    :type tenantID: string
-    :param clientID: Client ID from the Entra ID app
-    :type clientID: string
+    :param tenantId: Tenant Id for the Entra Id config
+    :type tenantId: string
+    :param clientId: Client Id from the Entra Id app
+    :type clientId: string
     :param config: Config file name
     :type config: string
     """
-    c = {"target": target, "auth": {"tenant": tenantID, "client": clientID}}
+    c = {
+        "target": target,
+        "auth": {"clientId": clientId, "tokenEndpoint": tokenEndpoint, "scope": scope},
+    }
     with open(config, "w") as f:
         yaml.dump(c, f)
 
 
-def loadConfig(config):
+def loadConfig(config: str) -> tuple[str, str, str, str]:
     """Loads the config from the given file
 
     :param config: Config file name
@@ -158,11 +147,16 @@ def loadConfig(config):
     """
     with open(config, "r") as f:
         c = yaml.safe_load(f)
-    return c["target"], c["auth"]["tenant"], c["auth"]["client"]
+    return (
+        c["target"],
+        c["auth"]["clientId"],
+        c["auth"]["tokenEndpoint"],
+        c["auth"]["scope"],
+    )
 
 
-def main():
-    args = getArgs()
+def main() -> None:
+    args: argparse.Namespace = getArgs()
 
     logging.basicConfig(
         format="[%(asctime)s][%(levelname)s] %(message)s",
@@ -178,18 +172,30 @@ def main():
     logging.getLogger("pypandoc").setLevel(logging.WARNING)
 
     if args.create_config:
-        createConfig(args.target, args.tenant_id, args.client_id, args.config)
+        createConfig(
+            args.target, args.client_id, args.token_endpoint, args.scope, args.config
+        )
         exit(0)
     if args.config:
-        target, tenantID, clientID = loadConfig(args.config)
+        target, clientId, tokenEndpoint, scope = loadConfig(args.config)
     else:
-        target, tenantID, clientID = args.target, args.tenant_id, args.client_id
+        target, clientId, tokenEndpoint, scope = (
+            args.target,
+            args.tenant_id,
+            args.client_id,
+            args.scope,
+        )
 
-    token = getAccessToken(tenantID, clientID)
+    client = ReqDB(
+        target,
+        scope,
+        clientId,
+        args.client_secret,
+        tokenEndpoint,
+        args.insecure,
+    )
 
-    client = ReqDB(f"{target}", token, args.insecure)
-
-    sourceFn = {
+    sourceFn: dict[str, Callable[..., None]] = {
         "asvs4": sources.asvs4,
         "asvs5": sources.asvs5,
         "samm": sources.samm,
