@@ -628,7 +628,7 @@ def samm(client: ReqDB):
             f"{ids[0]}-{ids[1]}-{ids[2]}"
         ]["requirements"][row["ID"]] = {
             "title": row["Question"],
-            "description": row["Guidance"],
+            "description": f"* {row['Guidance'].replace("\n ", "\n* ")}",
             "tag": row["Maturity"],
         }
 
