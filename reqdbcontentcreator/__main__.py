@@ -5,6 +5,7 @@ from os import getenv
 
 import yaml
 from reqdb import ReqDB
+from reqdb.api import OAuthClientAuth
 
 from reqdbcontentcreator import sources
 
@@ -188,10 +189,7 @@ def main() -> None:
 
     client = ReqDB(
         target,
-        scope,
-        clientId,
-        args.client_secret,
-        tokenEndpoint,
+        OAuthClientAuth(scope, clientId, args.client_secret, tokenEndpoint),
         args.insecure,
     )
 
