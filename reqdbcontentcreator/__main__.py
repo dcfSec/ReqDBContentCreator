@@ -26,7 +26,7 @@ def getArgs() -> argparse.Namespace:
                                 The URL for the OAuth token endpoint. Defaults to the env var 'REQDB_CLIENT_TOKEN_ENDPOINT'
         --scope SCOPE         The scope for the OAuth app (ReqDB API). Defaults to the env var 'REQDB_API_SCOPE'
         --client-id CLIENT_ID
-                                The client Id for the oauth client. Defaults to the env var 'REQDB_CLIENT_CLIENT_Id'
+                                The client Id for the oauth client. Defaults to the env var 'REQDB_CLIENT_CLIENT_ID'
         --client-secret CLIENT_SECRET
                                 The client secret for the oauth client. The env var should be used for this. Defaults to the env var 'REQDB_CLIENT_CLIENT_SECRET'
         --insecure            Allows the connection to ReqDB over TLS. Use this only in local test environments. This will leak your access token
@@ -80,8 +80,8 @@ def getArgs() -> argparse.Namespace:
     )
     parser.add_argument(
         "--client-id",
-        help="The client Id for the oauth client. Defaults to the env var 'REQDB_CLIENT_CLIENT_Id'",
-        default=getenv("REQDB_CLIENT_CLIENT_Id", None),
+        help="The client Id for the oauth client. Defaults to the env var 'REQDB_CLIENT_CLIENT_ID'",
+        default=getenv("REQDB_CLIENT_CLIENT_ID", None),
     )
     parser.add_argument(
         "--client-secret",
