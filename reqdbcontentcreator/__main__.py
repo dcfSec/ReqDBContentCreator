@@ -100,7 +100,6 @@ def getArgs() -> argparse.Namespace:
         help="Input file used as a source for the standard. This is only needed for the CIS Controls as they are behind a login wall. Will be ignored by the other sources",
     )
     parser.add_argument(
-        "-t",
         "--token",
         help="Use an access token for authentication. This will overwrite client-secret authentication",
         default=getenv("REQDB_ACCESS_TOKEN", None),
