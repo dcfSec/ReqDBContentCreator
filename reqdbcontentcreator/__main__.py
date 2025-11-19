@@ -5,7 +5,7 @@ from os import getenv
 
 import yaml
 from reqdb import ReqDB
-from reqdb.api import OAuthClientAuth
+from reqdb.api import OAuthClientAuth, AccessTokenAuth
 
 from reqdbcontentcreator import sources
 
@@ -100,6 +100,12 @@ def getArgs() -> argparse.Namespace:
         help="Input file used as a source for the standard. This is only needed for the CIS Controls as they are behind a login wall. Will be ignored by the other sources",
     )
     parser.add_argument(
+        "-t",
+        "--token",
+        help="Use an access token for authentication. This will overwrite client-secret authentication",
+        default=getenv("REQDB_ACCESS_TOKEN", None),
+    )
+    parser.add_argument(
         "-d",
         "--debug",
         help="Turns on debug log output",
@@ -187,11 +193,18 @@ def main() -> None:
             args.scope,
         )
 
-    client = ReqDB(
-        target,
-        OAuthClientAuth(scope, clientId, args.client_secret, tokenEndpoint),
-        args.insecure,
-    )
+    if args.token:
+        client = ReqDB(
+            target,
+            AccessTokenAuth(args.token),
+            args.insecure,
+        )
+    else:
+        client = ReqDB(
+            target,
+            OAuthClientAuth(scope, clientId, args.client_secret, tokenEndpoint),
+            args.insecure,
+        )
 
     sourceFn: dict[str, Callable[..., None]] = {
         "asvs4": sources.asvs4,
