@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "reqdbcontentcreator"
-version = "0.4.1"
+version = "0.4.2"
 description = ""
 authors = ["Fischer, Daniel-MGB <daniel.fischer@mgb.ch>"]
 readme = "README.md"

@@ -187,8 +187,8 @@ def main() -> None:
     else:
         target, clientId, tokenEndpoint, scope = (
             args.target,
-            args.tenant_id,
             args.client_id,
+            args.token_endpoint,
             args.scope,
         )
 
