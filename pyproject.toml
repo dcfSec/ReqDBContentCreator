@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "reqdbcontentcreator"
-version = "0.4.2"
+version = "0.4.3"
 description = ""
 authors = ["Fischer, Daniel-MGB <daniel.fischer@mgb.ch>"]
 readme = "README.md"
@@ -12,7 +12,7 @@ reqdbcontentcreator = 'reqdbcontentcreator.__main__:main'
 python = "^3.10"
 argparse = "^1.4.0"
 requests = "^2.32.3"
-reqdb = "^0.11.0"
+reqdb = "^0.12.0"
 pyyaml = "^6.0.2"
 excelextractor = "^0.1.0"
 pypandoc = "^1.14"
